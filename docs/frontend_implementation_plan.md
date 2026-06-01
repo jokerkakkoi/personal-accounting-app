@@ -24,7 +24,7 @@
 ## Open Questions
 
 > [!IMPORTANT]
-> **Navigation pattern**: The PRD specifies `react-router-dom` is NOT installed. Plan defaults to **react-router-dom v7** (standard) .
+> **Navigation pattern**: The PRD specifies `react-router-dom` will be installed. Plan defaults to **react-router-dom v7** (standard) .
 
 > [!IMPORTANT]
 > **State management**: No state lib installed. Plan uses **zustand** (lightweight, popular).
