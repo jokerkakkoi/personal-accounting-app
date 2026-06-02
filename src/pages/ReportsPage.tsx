@@ -167,7 +167,7 @@ export const ReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none min-h-screen">
+    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none">
       <PageHeader title="财务报表" />
 
       {/* Period Selection */}

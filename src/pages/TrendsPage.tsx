@@ -259,7 +259,7 @@ export const TrendsPage: React.FC = () => {
   const drawerDetails = getSelectedPeriodDetails();
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none min-h-screen">
+    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none">
       <PageHeader
         title="收支趋势"
         showBack={true}

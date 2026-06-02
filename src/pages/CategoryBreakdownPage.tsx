@@ -215,7 +215,7 @@ export const CategoryBreakdownPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none min-h-screen">
+    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none">
       <PageHeader
         title="分类支出明细"
         showBack={true}

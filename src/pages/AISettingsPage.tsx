@@ -189,7 +189,7 @@ export const AISettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none min-h-screen">
+    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none">
       <PageHeader
         title="AI 智能分类"
         showBack={true}

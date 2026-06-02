@@ -322,7 +322,7 @@ export const BackupRestorePage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none min-h-screen">
+    <div className="flex-1 flex flex-col bg-canvas pb-20 select-none">
       <PageHeader
         title="备份与恢复"
         showBack={true}

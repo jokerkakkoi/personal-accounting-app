@@ -32,7 +32,7 @@ export const AppLayout: React.FC = () => {
       {showNav && (
         <>
           {/* Centered Floating Action Button (FAB) */}
-          <div className="absolute bottom-[44px] left-1/2 -translate-x-1/2 z-40 select-none">
+          <div className="absolute bottom-[calc(36px+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-40 select-none">
             <button
               onClick={() => navigate('/transaction/new')}
               className="w-14 h-14 bg-brand-primary active:bg-brand-active text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 hover:scale-105 transition-transform"

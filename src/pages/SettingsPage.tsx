@@ -63,7 +63,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas pb-24 select-none min-h-screen">
+    <div className="flex-1 flex flex-col bg-canvas pb-24 select-none">
       <PageHeader title="系统设置" />
 
       <div className="px-4 py-4 flex flex-col gap-5">
