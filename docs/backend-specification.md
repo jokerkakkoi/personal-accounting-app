@@ -4,22 +4,28 @@
 
 ---
 
-## 1. 架构概述
+## 1. 架构概述与设计原则
 
+### 1.1 核心设计原则
+* **目标平台**：本应用当前阶段仅针对 **Android** 移动端进行构建与适配。
+* **字段序列化协议**：为了保持与前端 React/TypeScript 现有数据模型和状态管理器（如驼峰命名法 `camelCase`）的一致性，减少前端代码重构量，后端所有的 Rust DTO（Data Transfer Object）、接口入参以及返回结构体均统一声明 `#[serde(rename_all = "camelCase")]`，以实现无缝的 JSON 数据 casing 转换。
+* **统一错误处理机制**：后端使用统一的 `AppError` 枚举模型，封装数据库、网络以及安全组件的底层错误，并实现 `serde::Serialize`。当命令执行失败时，统一返回结构化的 JSON 错误给前端。
+
+### 1.2 架构拓扑
 本应用采用典型的 **Client-Server (C/S)** 架构的本地变体：
 * **前端 (Client)**：React + TypeScript，运行在 WebView 容器中。前端的状态管理器 [app-store.ts](file:///i:/Project/client-project/personal-accounting-app/src/stores/app-store.ts) 不再使用 `localStorage`，而是通过 Tauri IPC `invoke` 调用 Rust 后端。
-* **后端 (Server/Rust Core)**：Tauri 2.0 宿主进程。它使用 Rust 编写，负责数据库管理、系统原生能力调用 (文件选择器、分享通道)、加密存储与网络请求。
+* **后端 (Server/Rust Core)**：Tauri 2.0 宿主进程。它使用 Rust 编写，负责本地 SQLite 数据库管理、安全凭证存储、本地文件读写与网络请求。
 
 ```mermaid
 graph TD
-    subgraph Frontend (WebView)
+    subgraph Frontend ["Frontend (WebView)"]
         UI[React UI] <--> Store[Zustand Store]
     end
     
-    subgraph Backend (Tauri Rust Core)
+    subgraph Backend ["Backend (Tauri Rust Core)"]
         IPC[Tauri IPC Handlers / Commands] <--> Services[Business Services]
-        Services <--> DB[(SQLite DB via rusqlite)]
-        Services <--> KeyStore[(Android KeyStore / OS Keyring)]
+        Services <--> DB[(SQLite DB via tauri-plugin-sql)]
+        Services <--> Stronghold[(tauri-plugin-stronghold)]
         Services <--> AIClient[HTTP LLM Client]
         Services <--> BackupMgr[Backup & Restore Manager]
     end
@@ -31,7 +37,7 @@ graph TD
 
 ## 2. 数据库设计 (SQLite)
 
-本应用的数据完全存储在本地的 SQLite 数据库文件中。为了保持轻量和对移动端的绝对掌控力，推荐在 Rust 层直接使用 `rusqlite` crate（或者 Tauri 官方的 `tauri-plugin-sql` 的 Rust 绑定）管理数据库及迁移。
+本应用的数据完全存储在本地的 SQLite 数据库文件中。为了确保跨平台部署（Android 与 Desktop）的数据一致性与初始化便利性，我们采用 Tauri 官方的数据库插件 `tauri-plugin-sql` (SQLite 驱动)。该插件在 Rust 侧基于 `sqlx` 驱动，支持异步连接池管理、自动运行数据库迁移 (Migrations) 等高级特性。
 
 ### 2.1 数据库文件位置
 * **Android**：应用私有数据目录 `/data/data/<app-id>/databases/accounting.db`
@@ -121,6 +127,119 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | `key` | TEXT | PRIMARY KEY | 配置名 (如 `'has_seen_welcome'`, `'budget_notification'`) |
 | `value` | TEXT | NOT NULL | 配置值 (存储为 JSON 字符串或简单 String) |
+
+
+### 2.3 tauri-plugin-sql 初始化与使用
+
+在 Rust 宿主进程中，我们将通过配置插件的 `add_migrations` 方法来进行建表和初始数据录入，并利用该插件自动管理 SQLite 的连接生命周期与路径。
+
+#### 1. 注册插件与数据库迁移 (lib.rs)
+```rust
+use tauri_plugin_sql::{Migration, MigrationKind};
+
+pub fn run() {
+    // 数据库迁移逻辑
+    let migration_v1 = Migration {
+        version: 1,
+        description: "initialize_database",
+        sql: "
+            CREATE TABLE IF NOT EXISTS categories (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                icon TEXT NOT NULL,
+                type TEXT NOT NULL,
+                is_predefined INTEGER NOT NULL DEFAULT 0,
+                is_default INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS transactions (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                amount REAL NOT NULL,
+                category_id TEXT NOT NULL REFERENCES categories(id),
+                note TEXT DEFAULT '',
+                date TEXT NOT NULL,
+                time TEXT NOT NULL,
+                is_recurring INTEGER NOT NULL DEFAULT 0,
+                ai_classified INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS budgets (
+                id TEXT PRIMARY KEY,
+                month TEXT UNIQUE NOT NULL,
+                total_amount REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS category_budgets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                budget_id TEXT NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+                category_id TEXT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+                amount REAL NOT NULL,
+                UNIQUE(budget_id, category_id)
+            );
+            CREATE TABLE IF NOT EXISTS recurring_transactions (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                amount REAL NOT NULL,
+                category_id TEXT NOT NULL REFERENCES categories(id),
+                note TEXT DEFAULT '',
+                frequency TEXT NOT NULL,
+                start_date TEXT NOT NULL,
+                end_date TEXT DEFAULT NULL,
+                last_triggered_date TEXT DEFAULT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+        ",
+        kind: MigrationKind::Up,
+    };
+
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        // 注册 SQL 插件，指定连接池，并绑定迁移逻辑
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations("sqlite:accounting.db", vec![migration_v1])
+                .build(),
+        )
+        .invoke_handler(tauri::generate_handler![
+            // 此处注册后续编写的 Commands...
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+#### 2. 在 Rust Commands 中获取数据库连接
+Tauri 官方插件会在应用状态中注入管理连接池的实例。在 Rust command 函数中，可以通过 `tauri::AppHandle` 或注入 `Db` 连接直接执行查询：
+
+```rust
+use tauri::AppHandle;
+use tauri_plugin_sql::{Db, TauriSql};
+
+#[tauri::command]
+async fn get_categories(app: AppHandle) -> Result<Vec<Category>, String> {
+    // 获取插件管理的 SQLite 连接池实例
+    // 注意：tauri-plugin-sql 提供了便捷的连接池缓存，在 Rust 层可通过如下方式获取
+    let db = tauri_plugin_sql::Builder::default()
+        .build()
+        .get_db("sqlite:accounting.db") 
+        .map_err(|e| e.to_string())?;
+
+    // 执行异步 SQL 查询 (tauri-plugin-sql 的 db 支持 select / execute 异步方法)
+    let rows = db.select("SELECT id, name, icon, type, is_predefined, is_default FROM categories", vec![])
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 解析 rows (JsonValue 数组) 并转换为对应 Category 结构体返回
+    // ...
+    Ok(categories)
+}
+```
 
 ---
 
@@ -212,12 +331,19 @@ graph TD
 #### 4. 删除分类
 * **Command Name**: `delete_category`
 * **参数**: `id: String`
-* **返回**: `Result<bool, String>` (若成功删除返回 `true`)
+* **返回**: `Result<DeleteCategoryResult, AppError>`
+* **返回结构**:
+  ```rust
+  struct DeleteCategoryResult {
+      success: bool,
+      migratedCount: u32, // 被迁移的交易记录笔数
+  }
+  ```
 * **内部逻辑（极其重要）**：
   参照前端 [app-store.ts:L146-231](file:///i:/Project/client-project/personal-accounting-app/src/stores/app-store.ts#L146-231) 的业务逻辑，Rust 层在删除分类时必须使用**事务 (Transaction)** 完成以下原子操作：
   1. **拦截验证**：内置的预设分类（`is_predefined = 1`）禁止删除。
   2. **寻找备用分类 (Fallback)**：寻找同类型下已设为默认（`is_default`）的分类，或退而求其次选择 `exp_other` / `inc_other`，或者同类型中的第一个分类。
-  3. **迁移交易记录**：将所有原属于该删除分类的 `transactions` 的 `category_id` 改为备用分类的 ID。
+  3. **迁移交易记录**：将所有原属于该删除分类的 `transactions` 的 `category_id` 改为备用分类的 ID。记录受影响（被修改）的交易行数作为 `migratedCount`。
   4. **预算归并**：在 `category_budgets` 表中，如果该月也对备用分类配置了预算，则把被删除分类的预算金额合并累加到备用分类上，然后删除旧条目；如果没有，直接把被删除分类的 `category_id` 改为备用分类的 ID。
   5. **删除分类表条目**。
   6. **触发重算**：重算受影响的预算已花销额度 (`spent`)。
@@ -283,13 +409,13 @@ graph TD
 #### 2. 获取和更新 AI LLM 配置
 * **Command Name**: `get_ai_config` / `update_ai_config`
 * **特别注意**：
-  * API Key 的读写：在 Android 平台上，当调用 `update_ai_config` 时，API Key 应该加密写入 Android KeyStore；在桌面平台上，写入操作系统的密钥环（如 Windows Credential Manager）。
-  * 数据库的 `settings` 表中只记录除 Key 以外的普通配置（如模型名称、Endpoint 等），或者只保存被加密后的密文。
-  * `get_ai_config` 返回时，API Key 应该被脱敏（例如显示 `"••••••••••••••••"`），除非是专门的校验调用。
+  * API Key 的读写：在 Android 平台上，当调用 `update_ai_config` 时，API Key 应通过 `tauri-plugin-stronghold` 插件安全、加密地存储在本地保险库中。
+  * 数据库的 `settings` 表中只记录除 Key 以外 of 普通配置（如模型名称、Endpoint 等），以防 API Key 泄露。
+  * `get_ai_config` 返回时，API Key 应该被脱敏（例如显示 `"••••••••••••••••"`），以防止前端展示出明文。
 
 #### 3. 清除所有数据 (重置应用)
 * **Command Name**: `reset_all_data`
-* **返回**: `Result<(), String>`
+* **返回**: `Result<(), AppError>`
 * **功能**: 清空所有数据库表，并重新初始化默认分类。
 
 ---
@@ -306,14 +432,15 @@ graph TD
       date: String,
   }
   ```
-* **返回**: `Result<String, String>` (最匹配的分类 ID)
+* **返回**: `Result<String, AppError>` (最匹配的分类 ID)
 * **内部处理逻辑**：
-  1. 从安全存储中读取 LLM API Key 和 API 配置。
-  2. 获取当前系统中所有可用分类的名称和 ID 列表（格式化为 Prompt 上下文）。
-  3. 构建强约束 Prompt（要求模型**必须且只能**从给定的分类列表中选择一个匹配的名称，不要返回任何额外解释）。
-  4. 使用 `reqwest` 发送异步 HTTP 请求到 LLM API。
-  5. 设定超时机制（10 秒），若超时或离线则返回错误，前端自动降级到备用分类。
-  6. 匹配模型输出：若输出在分类列表中，返回该分类 ID，并将 `transactions` 的 `ai_classified` 标记置为 1；若返回无法匹配，则回退到备用分类。
+  1. 从 Stronghold 安全存储中读取 LLM API Key，从普通配置中读取 Base URL 和模型名称。
+  2. 统一使用 **OpenAI 兼容协议**进行通信，构造请求体发送至 `<Base URL>/v1/chat/completions`。
+  3. 获取当前系统中所有可用分类的名称和 ID 列表，并将其作为上下文组装到 Prompt 中。
+  4. 构建强约束 Prompt（要求模型必须且只能从给定的分类列表中选择一个匹配的名称或 ID，以 JSON 格式输出，不要返回任何额外解释）。
+  5. 使用 `reqwest` 发送异步 HTTP 请求到 LLM API。
+  6. 设定超时机制（由 `aiConfig.timeout` 指定，默认 10 秒），若超时、离线或大模型返回错误，则抛出 `AppError`，前端自动捕获并降级到默认备用分类。
+  7. 匹配模型输出：若输出在分类列表中，返回该分类 ID，并将新记账记录的 `aiClassified` 标记置为 1；若返回无法匹配，则返回错误以让前端回退到备用分类。
 
 #### 2. 测试 LLM API 连接
 * **Command Name**: `test_llm_connection`
@@ -376,25 +503,24 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # === 新增后端核心依赖 ===
-# 数据库
-rusqlite = { version = "0.31", features = ["bundled"] } # 捆绑 SQLite 引擎，简化跨平台编译
+# 数据库 (Tauri 官方 SQL 插件)
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+# 敏感信息安全存储 (Tauri Stronghold 保险库插件)
+tauri-plugin-stronghold = { version = "2" }
 # 异步运行时与网络通信 (调用 LLM)
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 # 日期与时间处理
 chrono = { version = "0.4", features = ["serde"] }
-# 敏感信息安全存储
-keyring = "2.1" # 跨平台调用系统底层钥匙串（Windows Credential Manager / macOS Keychain / Linux Secret Service）
-# Android 专用的本地通知与安全存储，如果使用 Tauri 官方插件，可以引入：
-# tauri-plugin-notification = "2"
 ```
 
 ### 4.2 定期交易调度器 (Recurring Scheduler)
-为了在没有传统守护进程的手机或电脑上处理 "每周三扣款"、"每月 1 号交房租" 这样的定期交易，应采用以下轻量化调度策略：
+为了在 Android 手机上处理 "每周三扣款"、"每月 1 号交房租" 这样的定期交易，并且避免常驻后台造成不必要的电量损耗，我们采用纯事件驱动的轻量化调度策略：
 
 1. **触发时机**：
    * 应用程序每次**冷启动**完成时。
    * 应用程序从**后台挂起恢复到前台**时 (监听 Tauri 的生命周期事件 `tauri::AppEvent::Resumed`)。
+   * 特别注意：**不采用任何常驻后台的定时轮询机制**，以最大化省电并适配 Android 的后台挂起/墓碑机制。
 2. **执行算法**：
    * 从 `recurring_transactions` 表中查询出所有当前生效（当前日期 $\ge$ `start_date` 且 `end_date` 未过期）的配置。
    * 对每一条配置，对比当前系统日期和该配置的 `last_triggered_date`：
@@ -439,7 +565,7 @@ src-tauri/src/
 建议开发阶段分为三步走：
 
 * **第一阶段：跑通数据库基础通路 (DB & CRUD)**
-  1. 引入 `rusqlite`，编写数据库初始化脚本，写入预设分类数据。
+  1. 引入 `tauri-plugin-sql`，配置数据库初始化与 Migration 脚本，写入预设分类数据。
   2. 实现 `categories` 和 `transactions` 的最简 CRUD 命令。
   3. 修改前端 `useAppStore`，用 `tauri::invoke` 替换读写 `localStorage`，确保数据可以在本地 `accounting.db` 中持久化存储。
 * **第二阶段：实现本地高级逻辑 (Budget & Recurring Scheduler)**
