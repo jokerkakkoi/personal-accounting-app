@@ -63,15 +63,20 @@ pub async fn set_default_category(
 
     let category = category.ok_or_else(|| AppError::NotFound(format!("Category {} not found", id)))?;
     
+    use sqlx::Connection;
+    let mut tx = conn.begin().await?;
+
     sqlx::query("UPDATE categories SET is_default = 0 WHERE type = ?")
         .bind(&category.type_)
-        .execute(&mut *conn)
+        .execute(&mut *tx)
         .await?;
 
     sqlx::query("UPDATE categories SET is_default = 1 WHERE id = ?")
         .bind(&id)
-        .execute(&mut *conn)
+        .execute(&mut *tx)
         .await?;
+
+    tx.commit().await?;
 
     Ok(())
 }
@@ -80,11 +85,14 @@ pub async fn delete_category(
     conn: &mut sqlx::SqliteConnection,
     id: String,
 ) -> Result<DeleteCategoryResult, AppError> {
+    use sqlx::Connection;
+    let mut tx = conn.begin().await?;
+
     let category: Option<Category> = sqlx::query_as::<_, Category>(
         "SELECT id, name, icon, type, is_predefined, is_default FROM categories WHERE id = ?"
     )
     .bind(&id)
-    .fetch_optional(&mut *conn)
+    .fetch_optional(&mut *tx)
     .await?;
 
     let category = category.ok_or_else(|| AppError::NotFound(format!("Category {} not found", id)))?;
@@ -97,7 +105,7 @@ pub async fn delete_category(
     )
     .bind(&category.type_)
     .bind(&id)
-    .fetch_optional(&mut *conn)
+    .fetch_optional(&mut *tx)
     .await?;
 
     let fallback = fallback.ok_or_else(|| AppError::Validation("No fallback category found for migration".to_string()))?;
@@ -107,7 +115,7 @@ pub async fn delete_category(
     sqlx::query("UPDATE recurring_transactions SET category_id = ? WHERE category_id = ?")
         .bind(fallback_id)
         .bind(&id)
-        .execute(&mut *conn)
+        .execute(&mut *tx)
         .await?;
 
     // 2. Migrate standard transactions
@@ -115,7 +123,7 @@ pub async fn delete_category(
         .bind(fallback_id)
         .bind(Utc::now().to_rfc3339())
         .bind(&id)
-        .execute(&mut *conn)
+        .execute(&mut *tx)
         .await?
         .rows_affected();
 
@@ -126,7 +134,7 @@ pub async fn delete_category(
     .bind(&id)
     .bind(fallback_id)
     .bind(&id)
-    .execute(&mut *conn)
+    .execute(&mut *tx)
     .await?;
 
     // 4. Move deleted budgets to fallback category where fallback budget does NOT exist
@@ -136,20 +144,22 @@ pub async fn delete_category(
     .bind(fallback_id)
     .bind(&id)
     .bind(fallback_id)
-    .execute(&mut *conn)
+    .execute(&mut *tx)
     .await?;
 
     // 5. Delete the remaining budget entries of the deleted category (which were merged/added to fallback)
     sqlx::query("DELETE FROM category_budgets WHERE category_id = ?")
         .bind(&id)
-        .execute(&mut *conn)
+        .execute(&mut *tx)
         .await?;
 
     // 6. Finally, delete the category itself
     sqlx::query("DELETE FROM categories WHERE id = ?")
         .bind(&id)
-        .execute(&mut *conn)
+        .execute(&mut *tx)
         .await?;
+
+    tx.commit().await?;
 
     Ok(DeleteCategoryResult {
         success: true,
@@ -354,7 +364,7 @@ pub async fn get_transactions(
     let total_count = total_count.0 as u32;
 
     // 2. Fetch items
-    let offset = (page.max(1) - 1) * page_size;
+    let offset = ((page as i64).saturating_sub(1).saturating_mul(page_size as i64)).max(0);
     let items_query = format!(
         "SELECT id, type, amount, category_id, note, date, time, is_recurring, ai_classified, created_at, updated_at FROM transactions {} ORDER BY date DESC, time DESC LIMIT ? OFFSET ?",
         base_where
@@ -375,7 +385,7 @@ pub async fn get_transactions(
     q_items = q_items.bind(page_size).bind(offset);
 
     let items = q_items.fetch_all(&mut *conn).await?;
-    let has_more = (offset + items.len() as u32) < total_count;
+    let has_more = (offset.saturating_add(items.len() as i64)) < total_count as i64;
 
     Ok(PaginatedTransactions {
         items,

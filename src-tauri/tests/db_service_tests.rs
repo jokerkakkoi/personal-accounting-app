@@ -9,7 +9,11 @@ pub struct TestDb {
 
 impl TestDb {
     pub async fn new() -> Self {
-        let pool = sqlx::SqlitePool::connect("sqlite::memory:").await.unwrap();
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
         // Run migration using sqlx::migrate!
         sqlx::migrate!()
             .run(&pool)
