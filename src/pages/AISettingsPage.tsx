@@ -112,17 +112,20 @@ export const AISettingsPage: React.FC = () => {
   };
 
   const handleTestConnection = async () => {
-    const finalModel = modelPreset === 'custom' ? customModel : modelPreset;
+    const cleanedBaseUrl = baseUrl.trim();
+    const cleanedApiKey = apiKey.trim();
+    const cleanedCustomModel = customModel?.trim();
+    const finalModel = modelPreset === 'custom' ? cleanedCustomModel : modelPreset;
     
-    if (!baseUrl) {
+    if (!cleanedBaseUrl) {
       setTestResult({ success: false, message: '测试失败：Base URL 不能为空。' });
       return;
     }
-    if (!apiKey) {
+    if (!cleanedApiKey) {
       setTestResult({ success: false, message: '测试失败：API Key 密钥不能为空。' });
       return;
     }
-    if (modelPreset === 'custom' && !finalModel) {
+    if (modelPreset === 'custom' && !cleanedCustomModel) {
       setTestResult({ success: false, message: '测试失败：自定义模型名称不能为空。' });
       return;
     }
@@ -136,11 +139,11 @@ export const AISettingsPage: React.FC = () => {
 
     try {
       // Use the /models endpoint as a lightweight connectivity & auth check
-      const url = baseUrl.replace(/\/+$/, '') + '/models';
+      const url = cleanedBaseUrl.replace(/\/+$/, '') + '/models';
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${cleanedApiKey}`,
           'Content-Type': 'application/json',
         },
         signal: controller.signal,

@@ -59,11 +59,15 @@ export const CategoriesPage: React.FC = () => {
 
   const handleDelete = () => {
     if (selectedCategory) {
-      deleteCategory(selectedCategory.id);
-      toast.success(`已删除分类“${selectedCategory.name}”`);
+      const success = deleteCategory(selectedCategory.id);
+      if (success) {
+        toast.success(`已删除分类“${selectedCategory.name}”`);
+      }
       setOptionsDrawerOpen(false);
       setEditDrawerOpen(false);
-      setSelectedCategory(null);
+      setTimeout(() => {
+        setSelectedCategory(null);
+      }, 200);
     }
   };
 

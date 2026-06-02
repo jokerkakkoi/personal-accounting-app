@@ -19,11 +19,10 @@ export const TransactionFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-  const transactions = useAppStore(state => state.transactions);
+    const transactions = useAppStore(state => state.transactions);
   const categories = useAppStore(state => state.categories);
   const addTransaction = useAppStore(state => state.addTransaction);
   const updateTransaction = useAppStore(state => state.updateTransaction);
-  const transactionsLoaded = useAppStore(state => state.transactionsLoaded);
 
   const isEditMode = !!id;
 
@@ -63,18 +62,14 @@ export const TransactionFormPage: React.FC = () => {
         if (tx.recurringConfig) {
           setRecurringConfig(tx.recurringConfig);
         }
-      } else if (prefilledIdRef.current !== id) {
-        // Transaction not found and we haven't prefilled for this id yet —
-        // it may still be loading. Only navigate away if transactions are loaded
-        // but the specific tx is missing.
-        if (transactionsLoaded) {
-          prefilledIdRef.current = id!;
-          toast.error('未找到该交易记录');
-          navigate('/', { replace: true });
-        }
+      } else {
+        // Transaction not found and we haven't prefilled for this id yet
+        prefilledIdRef.current = id!;
+        toast.error('未找到该交易记录');
+        navigate('/', { replace: true });
       }
     }
-  }, [id, isEditMode, transactions, transactionsLoaded, navigate]);
+  }, [id, isEditMode, transactions, navigate]);
 
   // Handle default category select when type changes
   useEffect(() => {

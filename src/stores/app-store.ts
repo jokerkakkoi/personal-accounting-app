@@ -8,8 +8,6 @@ interface AppState {
   budgets: Budget[];
   settings: AppSettings;
   aiConfig: AIConfig;
-  transactionsLoaded: boolean;
-  
   // Transaction Actions
   addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => string;
   updateTransaction: (id: string, tx: Partial<Transaction>) => void;
@@ -18,7 +16,7 @@ interface AppState {
   // Category Actions
   addCategory: (cat: Omit<Category, 'id' | 'isPredefined'>) => string;
   updateCategory: (id: string, name: string, icon: string) => void;
-  deleteCategory: (id: string) => void;
+  deleteCategory: (id: string) => boolean;
   setDefaultCategory: (id: string) => void;
   
   // Budget Actions
@@ -59,7 +57,6 @@ export const useAppStore = create<AppState>((set) => ({
   budgets: loadFromStorage<Budget[]>('budgets', INITIAL_BUDGETS),
   settings: loadFromStorage<AppSettings>('settings', MOCK_SETTINGS),
   aiConfig: loadFromStorage<AIConfig>('aiConfig', MOCK_AI_CONFIG),
-  transactionsLoaded: true,
 
   // Transaction Actions
   addTransaction: (txData) => {
@@ -147,6 +144,7 @@ export const useAppStore = create<AppState>((set) => ({
   },
 
   deleteCategory: (id) => {
+    let success = false;
     set((state) => {
       // Find category to delete
       const categoryToDelete = state.categories.find(c => c.id === id);
@@ -155,6 +153,7 @@ export const useAppStore = create<AppState>((set) => ({
       // Block deletion of predefined categories
       if (categoryToDelete.isPredefined) return {};
 
+      success = true;
       // Search for fallback category of same type that is not being deleted
       const sameTypeCats = state.categories.filter(c => c.type === categoryToDelete.type && c.id !== id);
       
@@ -196,6 +195,7 @@ export const useAppStore = create<AppState>((set) => ({
 
       return { categories: updatedCats, transactions: updatedTxs, budgets: updatedBudgets };
     });
+    return success;
   },
 
   setDefaultCategory: (id) => {

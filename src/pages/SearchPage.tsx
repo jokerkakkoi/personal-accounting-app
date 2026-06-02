@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../stores/app-store';
 import { PageHeader } from '../components/PageHeader';
@@ -32,6 +32,20 @@ export const SearchPage: React.FC = () => {
     amountRange: stateFilters?.amountRange || undefined,
   }));
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Synchronize state when location.state changes (re-navigation)
+  useEffect(() => {
+    const freshStateFilters = location.state as Partial<SearchFilters> | null;
+    const nextKeyword = freshStateFilters?.keyword || '';
+    setKeyword(nextKeyword);
+    setFilters({
+      keyword: nextKeyword,
+      type: freshStateFilters?.type || 'all',
+      categoryIds: freshStateFilters?.categoryIds || undefined,
+      dateRange: freshStateFilters?.dateRange || undefined,
+      amountRange: freshStateFilters?.amountRange || undefined,
+    });
+  }, [location.state]);
 
   // Update filters object whenever keyword changes
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
