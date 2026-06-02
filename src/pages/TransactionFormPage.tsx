@@ -14,15 +14,18 @@ import { toast } from 'sonner';
 import { SparklesIcon, Calendar02Icon, Time02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import dayjs from 'dayjs';
+import { aiService } from '../services/ai/ai-service';
+
 
 export const TransactionFormPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
-    const transactions = useAppStore(state => state.transactions);
+  const transactions = useAppStore(state => state.transactions);
   const categories = useAppStore(state => state.categories);
   const addTransaction = useAppStore(state => state.addTransaction);
   const updateTransaction = useAppStore(state => state.updateTransaction);
+  const aiConfig = useAppStore(state => state.aiConfig);
 
   const isEditMode = !!id;
 
@@ -45,6 +48,18 @@ export const TransactionFormPage: React.FC = () => {
 
   // Guard to prevent re-prefilling after initial load in edit mode
   const prefilledIdRef = useRef<string | null>(null);
+
+  // Ref for AI AbortController to handle cancellations
+  const aiAbortControllerRef = useRef<AbortController | null>(null);
+
+  // Clean up any pending AI requests on unmount
+  useEffect(() => {
+    return () => {
+      if (aiAbortControllerRef.current) {
+        aiAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Pre-fill form if editing (runs only once per id)
   useEffect(() => {
@@ -113,63 +128,52 @@ export const TransactionFormPage: React.FC = () => {
     });
   };
 
-  // Trigger Mock AI classification
-  const handleAICall = () => {
+  // Trigger AI classification
+  const handleAICall = async () => {
     if (!note.trim()) {
       toast.warning('请输入交易备注，以便 AI 进行智能分析分类。');
       return;
     }
 
+    if (aiAbortControllerRef.current) {
+      aiAbortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    aiAbortControllerRef.current = controller;
+
     setAiLoading(true);
     setAiRecommendedId(null);
 
-    // Mock API delay
-    setTimeout(() => {
-      setAiLoading(false);
-      
-      const searchNote = note.toLowerCase();
-      let matchedId = null;
+    try {
+      const result = await aiService.classify(
+        note,
+        type,
+        categories,
+        aiConfig,
+        controller.signal
+      );
 
-      // Simple keyword heuristics matching predefined and custom categories
-      if (type === 'expense') {
-        if (searchNote.includes('吃') || searchNote.includes('饭') || searchNote.includes('外卖') || searchNote.includes('麦当劳') || searchNote.includes('星巴克') || searchNote.includes('咖啡') || searchNote.includes('菜') || searchNote.includes('火锅') || searchNote.includes('饮')) {
-          matchedId = 'exp_food';
-        } else if (searchNote.includes('车') || searchNote.includes('地铁') || searchNote.includes('公交') || searchNote.includes('打车') || searchNote.includes('滴滴') || searchNote.includes('机票') || searchNote.includes('火车') || searchNote.includes('加油')) {
-          matchedId = 'exp_transport';
-        } else if (searchNote.includes('猫') || searchNote.includes('狗') || searchNote.includes('宠') || searchNote.includes('兽医') || searchNote.includes('罐头')) {
-          matchedId = 'exp_pet';
-        } else if (searchNote.includes('买') || searchNote.includes('淘宝') || searchNote.includes('数码') || searchNote.includes('配件') || searchNote.includes('日用') || searchNote.includes('超市')) {
-          matchedId = 'exp_shopping';
-        } else if (searchNote.includes('房租') || searchNote.includes('水电') || searchNote.includes('物业') || searchNote.includes('租房')) {
-          matchedId = 'exp_housing';
-        } else if (searchNote.includes('玩') || searchNote.includes('游戏') || searchNote.includes('电影') || searchNote.includes('音乐') || searchNote.includes('会员') || searchNote.includes('娱乐')) {
-          matchedId = 'exp_entertainment';
-        } else if (searchNote.includes('病') || searchNote.includes('药') || searchNote.includes('医院') || searchNote.includes('配方') || searchNote.includes('感冒')) {
-          matchedId = 'exp_medical';
+      if (result.categoryId) {
+        setAiRecommendedId(result.categoryId);
+        setCategoryId(result.categoryId);
+        if (result.source === 'llm') {
+          toast.success('AI 已智能预测分类，并自动为您选中该分类！');
         } else {
-          matchedId = 'exp_other';
+          toast.success('已根据备注为您自动推荐并选中最佳匹配分类！');
         }
-      } else {
-        if (searchNote.includes('工资') || searchNote.includes('薪水') || searchNote.includes('月薪')) {
-          matchedId = 'inc_salary';
-        } else if (searchNote.includes('奖金') || searchNote.includes('绩效') || searchNote.includes('年终')) {
-          matchedId = 'inc_bonus';
-        } else if (searchNote.includes('兼职') || searchNote.includes('外包') || searchNote.includes('私活')) {
-          matchedId = 'inc_parttime';
-        } else if (searchNote.includes('利息') || searchNote.includes('理财') || searchNote.includes('基金') || searchNote.includes('股票') || searchNote.includes('投资')) {
-          matchedId = 'inc_interest';
-        } else {
-          matchedId = 'inc_other';
-        }
-      }
-
-      if (matchedId) {
-        setAiRecommendedId(matchedId);
-        toast.success('AI 已成功推荐分类，已用闪烁小图标标记！');
       } else {
         toast.info('AI 暂未能识别该描述的分类，请手动选择。');
       }
-    }, 600);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        toast.error(`智能推荐失败: ${e?.message || '未知错误'}`);
+      }
+    } finally {
+      if (aiAbortControllerRef.current === controller) {
+        setAiLoading(false);
+      }
+    }
   };
 
   const handleSave = () => {

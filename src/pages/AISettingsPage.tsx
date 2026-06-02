@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { aiService } from '../services/ai/ai-service';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/app-store';
 import { PageHeader } from '../components/PageHeader';
@@ -58,6 +59,17 @@ export const AISettingsPage: React.FC = () => {
   const [showKey, setShowKey] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Ref for AI AbortController to handle connection test cancellations
+  const testAbortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (testAbortControllerRef.current) {
+        testAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
 
 
@@ -130,55 +142,49 @@ export const AISettingsPage: React.FC = () => {
       return;
     }
 
+    if (testAbortControllerRef.current) {
+      testAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    testAbortControllerRef.current = controller;
+
     setIsTesting(true);
     setTestResult(null);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
-    const startTime = performance.now();
-
     try {
-      // Use the /models endpoint as a lightweight connectivity & auth check
-      const url = cleanedBaseUrl.replace(/\/+$/, '') + '/models';
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${cleanedApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
+      const tempConfig = {
+        enabled: true,
+        baseUrl: cleanedBaseUrl,
+        apiKey: cleanedApiKey,
+        model: finalModel,
+        timeout,
+        promptTemplate,
+      };
+
+      const result = await aiService.testConnection(tempConfig, controller.signal);
+      
+      setTestResult({
+        success: result.success,
+        message: result.message,
       });
 
-      const elapsed = Math.round(performance.now() - startTime);
-
-      if (!response.ok) {
-        const errorBody = await response.text().catch(() => '');
-        const detail = errorBody ? `（${response.status}: ${errorBody.slice(0, 120)}）` : `（HTTP ${response.status}）`;
+      if (result.success) {
+        toast.success('AI 服务连接测试成功！');
+      } else {
+        toast.error('AI 服务连接测试失败');
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
         setTestResult({
           success: false,
-          message: `连接失败：服务器返回错误状态 ${detail}`,
+          message: `连接失败：${e?.message || '网络连接错误，请检查 Base URL 或网络连接。'}`,
         });
         toast.error('AI 服务连接测试失败');
-        return;
       }
-
-      setTestResult({
-        success: true,
-        message: `连接成功！与模型 ${finalModel} 握手完成，响应延迟 ${elapsed}ms。`,
-      });
-      toast.success('AI 服务连接测试成功！');
-    } catch (e: any) {
-      const isAbort = e?.name === 'AbortError';
-      setTestResult({
-        success: false,
-        message: isAbort
-          ? `连接失败：请求超时（${timeout}秒），请检查您的网络连接与代理地址。`
-          : `连接失败：${e?.message || '网络错误，请检查 Base URL 或网络连接。'}`,
-      });
-      toast.error('AI 服务连接测试失败');
     } finally {
-      clearTimeout(timeoutId);
-      setIsTesting(false);
+      if (testAbortControllerRef.current === controller) {
+        setIsTesting(false);
+      }
     }
   };
 
