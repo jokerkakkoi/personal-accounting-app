@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/app-store';
 import { PageHeader } from '../components/PageHeader';
@@ -43,11 +43,15 @@ export const TransactionFormPage: React.FC = () => {
   const [aiRecommendedId, setAiRecommendedId] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Pre-fill form if editing
+  // Guard to prevent re-prefilling after initial load in edit mode
+  const prefilledIdRef = useRef<string | null>(null);
+
+  // Pre-fill form if editing (runs only once per id)
   useEffect(() => {
-    if (isEditMode) {
+    if (isEditMode && prefilledIdRef.current !== id) {
       const tx = transactions.find(t => t.id === id);
       if (tx) {
+        prefilledIdRef.current = id!;
         setType(tx.type);
         setAmount(String(tx.amount));
         setCategoryId(tx.categoryId);
@@ -58,9 +62,15 @@ export const TransactionFormPage: React.FC = () => {
         if (tx.recurringConfig) {
           setRecurringConfig(tx.recurringConfig);
         }
-      } else {
-        toast.error('未找到该交易记录');
-        navigate('/', { replace: true });
+      } else if (prefilledIdRef.current !== id) {
+        // Transaction not found and we haven't prefilled for this id yet —
+        // it may still be loading. Only navigate away if transactions are loaded
+        // but the specific tx is missing.
+        if (transactions.length > 0) {
+          prefilledIdRef.current = id!;
+          toast.error('未找到该交易记录');
+          navigate('/', { replace: true });
+        }
       }
     }
   }, [id, isEditMode, transactions, navigate]);
@@ -73,9 +83,12 @@ export const TransactionFormPage: React.FC = () => {
       const defaultCat = categories.find(c => c.type === type && c.isDefault) || categories.find(c => c.type === type);
       setCategoryId(defaultCat ? defaultCat.id : null);
     }
-    // Reset AI recommendations when type changes
-    setAiRecommendedId(null);
   }, [type, categories, categoryId]);
+
+  // Reset AI recommendations only when switching expense/income type
+  useEffect(() => {
+    setAiRecommendedId(null);
+  }, [type]);
 
   // NumPad typing handler
   const handleKeyPress = (key: string) => {

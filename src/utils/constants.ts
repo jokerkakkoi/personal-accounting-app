@@ -34,7 +34,7 @@ export const ICON_PALETTE = [
   // Home & Utilities
   '🏠', '🛋️', '🔌', '📶', '💧', '🧹', '📦', '📪',
   // Fun & Entertainment
-  '🎮', '📺', '🎤', '🎬', '🎨', '✈️', '🎟️', '🎰',
+  '🎮', '📺', '🎤', '🎬', '🎨', '🎯', '🎟️', '🎰',
   // Health & Sports
   '💊', '🏥', '🦷', '💪', '🏃', '🚴', '⚽', '🏊',
   // Education & Finance

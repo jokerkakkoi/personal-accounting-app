@@ -21,6 +21,7 @@ export const BudgetsPage: React.FC = () => {
   const updateTotalBudget = useAppStore(state => state.updateTotalBudget);
   const updateCategoryBudget = useAppStore(state => state.updateCategoryBudget);
   const deleteCategoryBudget = useAppStore(state => state.deleteCategoryBudget);
+  const settings = useAppStore(state => state.settings);
 
   // States
   const [currentMonth, setCurrentMonth] = useState(() => dayjs().format('YYYY-MM'));
@@ -147,7 +148,7 @@ export const BudgetsPage: React.FC = () => {
         />
 
         {/* Overspend warning banner if over limit */}
-        {monthBudget.totalAmount > 0 && currentMonthSpent > monthBudget.totalAmount && (
+        {settings.budgetNotification && monthBudget.totalAmount > 0 && currentMonthSpent > monthBudget.totalAmount && (
           <Alert variant="destructive" className="bg-error/10 border-error/20 text-error">
             <HugeiconsIcon icon={AlertCircleIcon} size={16} className="shrink-0 text-error stroke-2" />
             <div>

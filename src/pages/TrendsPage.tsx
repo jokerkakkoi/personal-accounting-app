@@ -353,11 +353,11 @@ export const TrendsPage: React.FC = () => {
               </span>
             </div>
             <div className="flex justify-between py-2.5 px-4">
-              <span className="text-muted-token">平均月度支出</span>
+              <span className="text-muted-token">{rangeType === 60 ? '平均年度支出' : '平均月度支出'}</span>
               <span className="font-medium text-ink">{formatCurrency(avgExpense)}</span>
             </div>
             <div className="flex justify-between py-2.5 px-4">
-              <span className="text-muted-token">最高单月支出</span>
+              <span className="text-muted-token">{rangeType === 60 ? '最高单年支出' : '最高单月支出'}</span>
               <span className="font-medium text-error">{formatCurrency(maxExpense)}</span>
             </div>
           </div>

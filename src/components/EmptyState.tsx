@@ -28,19 +28,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       )}
     >
       <div className="text-4xl mb-3 animate-bounce select-none">
-        {typeof icon === 'string' ? icon : icon}
+        {icon}
       </div>
-      
       <h3 className="text-lg font-heading text-ink mb-1 select-none">
         {title}
       </h3>
-      
+
       {description && (
         <p className="text-sm text-muted-token max-w-xs mb-4 select-none">
           {description}
         </p>
       )}
-      
+
       {action && (
         <Button
           onClick={action.onClick}

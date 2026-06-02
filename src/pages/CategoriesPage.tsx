@@ -62,6 +62,8 @@ export const CategoriesPage: React.FC = () => {
       deleteCategory(selectedCategory.id);
       toast.success(`已删除分类“${selectedCategory.name}”`);
       setOptionsDrawerOpen(false);
+      setEditDrawerOpen(false);
+      setSelectedCategory(null);
     }
   };
 

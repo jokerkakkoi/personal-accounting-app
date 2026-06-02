@@ -31,7 +31,15 @@ export const BudgetProgressCard: React.FC<BudgetProgressCardProps> = ({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className="bg-surface-card border border-hairline p-5 rounded-lg flex flex-col gap-4 shadow-sm cursor-pointer hover:bg-surface-cream-strong active:scale-98 transition-transform select-none"
     >
       {/* Title block */}

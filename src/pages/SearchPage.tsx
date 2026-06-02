@@ -23,9 +23,9 @@ export const SearchPage: React.FC = () => {
   const stateFilters = location.state as Partial<SearchFilters> | null;
 
   // States
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(() => stateFilters?.keyword || '');
   const [filters, setFilters] = useState<SearchFilters>(() => ({
-    keyword: '',
+    keyword: stateFilters?.keyword || '',
     type: stateFilters?.type || 'all',
     categoryIds: stateFilters?.categoryIds || undefined,
     dateRange: stateFilters?.dateRange || undefined,
@@ -115,7 +115,7 @@ export const SearchPage: React.FC = () => {
       if (min !== undefined || max !== undefined) {
         chips.push({
           key: 'amountRange',
-          label: `金额: ${min !== undefined ? `≥${min}` : ''} ${max !== undefined ? `≤${max}` : ''}`,
+          label: `金额: ${[min !== undefined ? `≥${min}` : '', max !== undefined ? `≤${max}` : ''].filter(Boolean).join(' ')}`,
           onRemove: () => setFilters(prev => ({ ...prev, amountRange: undefined })),
         });
       }

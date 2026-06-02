@@ -30,7 +30,15 @@ export const CategoryBudgetItem: React.FC<CategoryBudgetItemProps> = ({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       className="flex items-center gap-3 p-3 bg-canvas border-b border-hairline/50 hover:bg-surface-soft active:bg-surface-soft/80 cursor-pointer select-none"
       style={{ minHeight: '56px' }}
     >
@@ -58,7 +66,7 @@ export const CategoryBudgetItem: React.FC<CategoryBudgetItemProps> = ({
       {/* Percentage label */}
       <div className="shrink-0 text-right min-w-[40px]">
         <span className={cn('text-xs font-semibold tabular-nums', isOverspent ? 'text-error' : isWarning ? 'text-warning' : 'text-success')}>
-          {formatPercent(spent / budgetAmount * 100)}
+          {formatPercent(percent)}
         </span>
       </div>
     </div>

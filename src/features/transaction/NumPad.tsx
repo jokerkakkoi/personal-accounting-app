@@ -24,6 +24,7 @@ export const NumPad: React.FC<NumPadProps> = ({ onKeyPress, className }) => {
             key={key}
             type="button"
             onClick={() => handlePress(key)}
+            aria-label={isBackspace ? '退格' : undefined}
             className={cn(
               'h-14 flex items-center justify-center text-lg font-medium bg-canvas rounded-md border border-hairline text-ink select-none',
               'active:bg-surface-cream-strong active:scale-95 transition-all outline-none',

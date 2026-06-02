@@ -96,7 +96,7 @@ export const CategoryEditDrawer: React.FC<CategoryEditDrawerProps> = ({
         {/* Action buttons */}
         <DrawerFooter className="border-t border-hairline p-4 flex flex-col gap-2 shrink-0 select-none">
           <div className="flex gap-3">
-            {isEditMode && onDelete && !category.isPredefined && (
+            {isEditMode && onDelete && !category?.isPredefined && (
               <Button
                 variant="outline"
                 onClick={() => {

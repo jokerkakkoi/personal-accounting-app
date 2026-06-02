@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/app-store';
 import { PageHeader } from '../components/PageHeader';
@@ -108,6 +108,7 @@ export const BackupRestorePage: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedBackup, setParsedBackup] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const exportIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Calculate current database stats
   const transactionCount = transactions.length;
@@ -124,17 +125,21 @@ export const BackupRestorePage: React.FC = () => {
     setIsExporting(true);
     setExportProgress(0);
 
-    const interval = setInterval(() => {
-      setExportProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          triggerDownload();
-          return 100;
-        }
-        return prev + 25;
-      });
+    exportIntervalRef.current = setInterval(() => {
+      setExportProgress((prev) => Math.min(prev + 25, 100));
     }, 200);
   };
+
+  // Side-effect: trigger download when progress reaches 100
+  useEffect(() => {
+    if (exportProgress === 100) {
+      if (exportIntervalRef.current) {
+        clearInterval(exportIntervalRef.current);
+        exportIntervalRef.current = null;
+      }
+      triggerDownload();
+    }
+  }, [exportProgress]);
 
   const triggerDownload = async () => {
     try {

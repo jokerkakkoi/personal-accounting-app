@@ -126,23 +126,51 @@ export const AISettingsPage: React.FC = () => {
     setIsTesting(true);
     setTestResult(null);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout * 1000);
+    const startTime = performance.now();
+
     try {
-      // Mock API delay for 1.5s
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate success
+      // Use the /models endpoint as a lightweight connectivity & auth check
+      const url = baseUrl.replace(/\/+$/, '') + '/models';
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      const elapsed = Math.round(performance.now() - startTime);
+
+      if (!response.ok) {
+        const errorBody = await response.text().catch(() => '');
+        const detail = errorBody ? `（${response.status}: ${errorBody.slice(0, 120)}）` : `（HTTP ${response.status}）`;
+        setTestResult({
+          success: false,
+          message: `连接失败：服务器返回错误状态 ${detail}`,
+        });
+        toast.error('AI 服务连接测试失败');
+        return;
+      }
+
       setTestResult({
         success: true,
-        message: `连接成功！与模型 ${finalModel} 握手完成，响应延迟 184ms。`
+        message: `连接成功！与模型 ${finalModel} 握手完成，响应延迟 ${elapsed}ms。`,
       });
       toast.success('AI 服务连接测试成功！');
-    } catch (e) {
+    } catch (e: any) {
+      const isAbort = e?.name === 'AbortError';
       setTestResult({
         success: false,
-        message: '连接失败：请求超时，请检查您的网络连接与代理地址。'
+        message: isAbort
+          ? `连接失败：请求超时（${timeout}秒），请检查您的网络连接与代理地址。`
+          : `连接失败：${e?.message || '网络错误，请检查 Base URL 或网络连接。'}`,
       });
       toast.error('AI 服务连接测试失败');
     } finally {
+      clearTimeout(timeoutId);
       setIsTesting(false);
     }
   };

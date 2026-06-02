@@ -64,8 +64,10 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   };
 
   const handleApply = () => {
-    const minVal = minAmount !== '' ? parseFloat(minAmount) : undefined;
-    const maxVal = maxAmount !== '' ? parseFloat(maxAmount) : undefined;
+    const rawMin = minAmount !== '' ? parseFloat(minAmount) : undefined;
+    const rawMax = maxAmount !== '' ? parseFloat(maxAmount) : undefined;
+    const minVal = rawMin !== undefined && !isNaN(rawMin) ? rawMin : undefined;
+    const maxVal = rawMax !== undefined && !isNaN(rawMax) ? rawMax : undefined;
 
     const newFilters: SearchFilters = {
       ...filters,

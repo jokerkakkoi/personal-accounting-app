@@ -145,7 +145,7 @@ export const ReportsPage: React.FC = () => {
       
       let label = '';
       if (periodType === 'day') label = targetDate.format('DD');
-      else if (periodType === 'week') label = targetDate.format('W');
+      else if (periodType === 'week') label = targetDate.startOf('week').format('MM/DD');
       else if (periodType === 'month') label = targetDate.format('MM');
       else if (periodType === 'year') label = targetDate.format('YY');
 
