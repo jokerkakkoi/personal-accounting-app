@@ -23,14 +23,18 @@ export class LLMClassifier implements AIClassifier {
       .replace('[CATEGORIES_LIST]', categoriesList)
       .replace('[USER_INPUT]', note);
 
+    let timedOut = false;
     const controller = new AbortController();
     const timeoutVal = config.timeout || 10;
-    const timeoutId = setTimeout(() => controller.abort(), timeoutVal * 1000);
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutVal * 1000);
 
     if (signal) {
       if (signal.aborted) {
         clearTimeout(timeoutId);
-        throw new Error('AbortError');
+        throw new DOMException('Aborted', 'AbortError');
       }
       signal.addEventListener('abort', () => {
         clearTimeout(timeoutId);
@@ -77,16 +81,23 @@ export class LLMClassifier implements AIClassifier {
     } catch (e: any) {
       clearTimeout(timeoutId);
       if (e?.name === 'AbortError') {
-        throw new Error(`AI 请求超时（超时限制 ${timeoutVal} 秒）`);
+        if (timedOut) {
+          throw new Error(`AI 请求超时（超时限制 ${timeoutVal} 秒）`);
+        }
+        throw e;
       }
       throw e;
     }
   }
 
   async testConnection(config: AIConfig, signal?: AbortSignal): Promise<ConnectionTestResult> {
+    let timedOut = false;
     const controller = new AbortController();
     const timeoutVal = config.timeout || 10;
-    const timeoutId = setTimeout(() => controller.abort(), timeoutVal * 1000);
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutVal * 1000);
 
     if (signal) {
       if (signal.aborted) {
@@ -131,11 +142,21 @@ export class LLMClassifier implements AIClassifier {
     } catch (e: any) {
       clearTimeout(timeoutId);
       const isAbort = e?.name === 'AbortError';
+      if (isAbort) {
+        if (timedOut) {
+          return {
+            success: false,
+            message: `连接失败：超时限制 ${timeoutVal} 秒。请检查您的网络连接。`,
+          };
+        }
+        return {
+          success: false,
+          message: '测试已被取消',
+        };
+      }
       return {
         success: false,
-        message: isAbort
-          ? `连接失败：超时限制 ${timeoutVal} 秒。请检查您的网络连接。`
-          : `连接失败：${e?.message || '网络连接错误，请检查 URL。'}`,
+        message: `连接失败：${e?.message || '网络连接错误，请检查 URL。'}`,
       };
     }
   }

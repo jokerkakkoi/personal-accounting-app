@@ -163,23 +163,27 @@ export const AISettingsPage: React.FC = () => {
 
       const result = await aiService.testConnection(tempConfig, controller.signal);
       
-      setTestResult({
-        success: result.success,
-        message: result.message,
-      });
+      if (testAbortControllerRef.current === controller) {
+        setTestResult({
+          success: result.success,
+          message: result.message,
+        });
 
-      if (result.success) {
-        toast.success('AI 服务连接测试成功！');
-      } else {
-        toast.error('AI 服务连接测试失败');
+        if (result.success) {
+          toast.success('AI 服务连接测试成功！');
+        } else {
+          toast.error('AI 服务连接测试失败');
+        }
       }
     } catch (e: any) {
       if (e?.name !== 'AbortError') {
-        setTestResult({
-          success: false,
-          message: `连接失败：${e?.message || '网络连接错误，请检查 Base URL 或网络连接。'}`,
-        });
-        toast.error('AI 服务连接测试失败');
+        if (testAbortControllerRef.current === controller) {
+          setTestResult({
+            success: false,
+            message: `连接失败：${e?.message || '网络连接错误，请检查 Base URL 或网络连接。'}`,
+          });
+          toast.error('AI 服务连接测试失败');
+        }
       }
     } finally {
       if (testAbortControllerRef.current === controller) {

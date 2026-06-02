@@ -157,20 +157,24 @@ export const TransactionFormPage: React.FC = () => {
         controller.signal
       );
 
-      if (result.categoryId) {
-        setAiRecommendedId(result.categoryId);
-        setCategoryId(result.categoryId);
-        if (result.source === 'llm') {
-          toast.success('AI 已智能预测分类，并自动为您选中该分类！');
+      if (aiAbortControllerRef.current === controller) {
+        if (result.categoryId) {
+          setAiRecommendedId(result.categoryId);
+          setCategoryId(result.categoryId);
+          if (result.source === 'llm') {
+            toast.success('AI 已智能预测分类，并自动为您选中该分类！');
+          } else {
+            toast.success('已根据备注为您自动推荐并选中最佳匹配分类！');
+          }
         } else {
-          toast.success('已根据备注为您自动推荐并选中最佳匹配分类！');
+          toast.info('AI 暂未能识别该描述的分类，请手动选择。');
         }
-      } else {
-        toast.info('AI 暂未能识别该描述的分类，请手动选择。');
       }
     } catch (e: any) {
       if (e?.name !== 'AbortError') {
-        toast.error(`智能推荐失败: ${e?.message || '未知错误'}`);
+        if (aiAbortControllerRef.current === controller) {
+          toast.error(`智能推荐失败: ${e?.message || '未知错误'}`);
+        }
       }
     } finally {
       if (aiAbortControllerRef.current === controller) {
