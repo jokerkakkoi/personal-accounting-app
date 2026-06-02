@@ -79,9 +79,12 @@ export const TransactionFormPage: React.FC = () => {
         }
       } else {
         // Transaction not found and we haven't prefilled for this id yet
-        prefilledIdRef.current = id!;
-        toast.error('未找到该交易记录');
-        navigate('/', { replace: true });
+        // Only trigger the not found redirection if transactions are loaded (not empty/undefined)
+        if (transactions && transactions.length > 0) {
+          prefilledIdRef.current = id!;
+          toast.error('未找到该交易记录');
+          navigate('/', { replace: true });
+        }
       }
     }
   }, [id, isEditMode, transactions, navigate]);

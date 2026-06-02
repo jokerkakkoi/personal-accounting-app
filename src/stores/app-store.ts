@@ -187,10 +187,42 @@ export const useAppStore = create<AppState>((set) => ({
         tx.categoryId === id ? { ...tx, categoryId: fallbackId, updatedAt: new Date().toISOString() } : tx
       );
       
+      // Clean and merge category budgets for deleted category id into fallbackId
+      const cleanedBudgets = state.budgets.map((b) => {
+        const targetCb = b.categoryBudgets.find(cb => cb.categoryId === id);
+        if (!targetCb) return b;
+
+        const hasFallback = b.categoryBudgets.some(cb => cb.categoryId === fallbackId);
+        let newCategoryBudgets: CategoryBudget[];
+
+        if (hasFallback) {
+          newCategoryBudgets = b.categoryBudgets
+            .map(cb => {
+              if (cb.categoryId === fallbackId) {
+                return { ...cb, amount: parseFloat((cb.amount + targetCb.amount).toFixed(2)) };
+              }
+              return cb;
+            })
+            .filter(cb => cb.categoryId !== id);
+        } else {
+          newCategoryBudgets = b.categoryBudgets.map(cb => {
+            if (cb.categoryId === id) {
+              return { ...cb, categoryId: fallbackId };
+            }
+            return cb;
+          });
+        }
+
+        return {
+          ...b,
+          categoryBudgets: newCategoryBudgets,
+        };
+      });
+
       saveToStorage('categories', updatedCats);
       saveToStorage('transactions', updatedTxs);
       
-      const updatedBudgets = recalculateBudgetsSpent(updatedTxs, state.budgets);
+      const updatedBudgets = recalculateBudgetsSpent(updatedTxs, cleanedBudgets);
       saveToStorage('budgets', updatedBudgets);
 
       return { categories: updatedCats, transactions: updatedTxs, budgets: updatedBudgets };

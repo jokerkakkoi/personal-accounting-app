@@ -22,11 +22,11 @@ export const BudgetProgressCard: React.FC<BudgetProgressCardProps> = ({
   // Determine color matching for progress & warning states
   const isOverspent = spent > total;
   const isWarning = percent >= 80 && percent < 100;
-  
-  const progressColor = isOverspent 
-    ? 'bg-error' 
-    : isWarning 
-      ? 'bg-warning' 
+
+  const progressColor = isOverspent
+    ? 'bg-error'
+    : isWarning
+      ? 'bg-warning'
       : 'bg-success';
 
   return (
@@ -83,8 +83,7 @@ export const BudgetProgressCard: React.FC<BudgetProgressCardProps> = ({
           </div>
           <div className="flex justify-between text-[10px] text-muted-soft font-medium">
             <span>使用进度</span>
-            <span>{formatPercent(spent / total * 100)}</span>
-          </div>
+            <span>{formatPercent(percent)}</span>          </div>
         </div>
       )}
     </div>

@@ -116,8 +116,8 @@ export const HomePage: React.FC = () => {
         <MonthlySummaryCard income={totalIncome} expense={totalExpense} />
 
         {/* Budget Warning banner */}
-        {settings.budgetNotification && (
-          <BudgetBanner spent={totalExpense} total={currentBudget?.totalAmount} />
+        {settings.budgetNotification && currentBudget?.totalAmount !== undefined && currentBudget.totalAmount > 0 && (
+          <BudgetBanner spent={totalExpense} total={currentBudget.totalAmount} />
         )}
       </div>
 

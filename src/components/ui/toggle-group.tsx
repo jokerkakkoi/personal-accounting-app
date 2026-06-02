@@ -24,6 +24,7 @@ function ToggleGroup({
   spacing = 2,
   orientation = "horizontal",
   children,
+  style,
   ...props
 }: React.ComponentProps<typeof ToggleGroupPrimitive.Root> &
   VariantProps<typeof toggleVariants> & {
@@ -40,7 +41,7 @@ function ToggleGroup({
       style={
         {
           gap: `${spacing * 0.25}rem`,
-          ...props.style,
+          ...style,
         } as React.CSSProperties
       }
       className={cn(

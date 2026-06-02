@@ -38,7 +38,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
             }}
             role="button"
             tabIndex={0}
-            className="flex flex-col items-center gap-1 cursor-pointer select-none active:scale-95 transition-transform focus:outline-none"
+            className="flex flex-col items-center gap-1 cursor-pointer select-none active:scale-95 transition-transform focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 rounded-lg"
           >
             {/* Icon Container with optional AI badge */}
             <div className="relative">
@@ -47,14 +47,14 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({
                 selected={isSelected}
                 size="md"
               />
-              
+
               {isAIRecommended && !isSelected && (
                 <div className="absolute -top-1 -right-1 bg-accent-teal text-white p-0.5 rounded-full flex items-center justify-center shadow-sm animate-bounce" title="AI 推荐">
                   <HugeiconsIcon icon={SparklesIcon} size={8} className="fill-white" />
                 </div>
               )}
             </div>
-            
+
             {/* Category Name */}
             <span
               className={cn(
