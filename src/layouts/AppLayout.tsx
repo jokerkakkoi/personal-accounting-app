@@ -22,7 +22,7 @@ export const AppLayout: React.FC = () => {
   ];
 
   return (
-    <div className="w-full min-h-screen md:max-w-[420px] md:mx-auto md:shadow-2xl md:border-x md:border-hairline bg-canvas flex flex-col relative overflow-hidden">
+    <div className="w-full h-screen h-[100dvh] md:max-w-[420px] md:mx-auto md:shadow-2xl md:border-x md:border-hairline bg-canvas flex flex-col relative overflow-hidden">
       {/* Page Content */}
       <main className="flex-1 flex flex-col overflow-y-auto pb-safe">
         <Outlet />

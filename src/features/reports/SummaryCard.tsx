@@ -79,7 +79,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
         <div className="flex flex-col">
           <span className="text-[10px] text-muted-soft uppercase tracking-wider">本期净结余</span>
           <span className={cn(
-            "text-2xl font-heading font-semibold mt-0.5",
+            "text-2xl font-sans font-semibold mt-0.5",
             netBalance >= 0 ? "text-ink" : "text-error"
           )}>
             {formatCurrency(netBalance)}

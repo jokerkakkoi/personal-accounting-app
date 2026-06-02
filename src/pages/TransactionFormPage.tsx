@@ -248,7 +248,7 @@ export const TransactionFormPage: React.FC = () => {
         <div className="text-right py-4 border-b border-hairline flex items-center justify-end relative h-16">
           <span className="text-xs text-muted-token absolute left-0 bottom-2 select-none">金额 (元)</span>
           <div className="flex items-baseline gap-1 select-all">
-            <span className={`text-4xl font-heading font-medium tracking-tight ${type === 'expense' ? 'text-error' : 'text-success'}`}>
+            <span className={`text-4xl font-sans font-medium tracking-tight ${type === 'expense' ? 'text-error' : 'text-success'}`}>
               ¥ {amount}
             </span>
             <span className={`w-0.5 h-8 bg-brand-primary animate-ping ml-0.5 select-none`} style={{ animationDuration: '1s' }} />

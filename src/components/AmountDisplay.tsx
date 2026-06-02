@@ -29,9 +29,9 @@ export const AmountDisplay: React.FC<AmountDisplayProps> = ({
   const sizeClasses = {
     sm: 'text-sm font-sans',
     md: 'text-base font-sans',
-    lg: 'text-lg font-heading tracking-wide',
-    xl: 'text-2xl font-heading tracking-wider',
-    '2xl': 'text-4xl font-heading tracking-wider',
+    lg: 'text-lg font-sans tracking-wide',
+    xl: 'text-2xl font-sans tracking-wider',
+    '2xl': 'text-4xl font-sans tracking-wider',
   };
 
   // Ensure sign is correctly set for neutral types

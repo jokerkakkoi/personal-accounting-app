@@ -55,7 +55,7 @@ export const BudgetProgressCard: React.FC<BudgetProgressCardProps> = ({
       <div className="flex justify-between items-baseline">
         <div className="flex flex-col">
           <span className="text-[10px] text-muted-soft mb-0.5">本月已花</span>
-          <span className="text-2xl font-heading font-medium text-ink">
+          <span className="text-2xl font-sans font-medium text-ink">
             {formatCurrency(spent)}
           </span>
         </div>

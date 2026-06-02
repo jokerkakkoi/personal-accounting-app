@@ -289,7 +289,7 @@ export const CategoryBreakdownPage: React.FC = () => {
             <div className="relative w-full h-[220px] flex items-center justify-center">
               <div className="absolute flex flex-col items-center justify-center text-center pointer-events-none select-none z-10">
                 <span className="text-[10px] text-muted-soft uppercase font-semibold">总支出</span>
-                <span className="text-xl font-heading font-semibold text-ink mt-0.5">
+                <span className="text-xl font-sans font-semibold text-ink mt-0.5">
                   {formatCurrency(totalExpenseAmount)}
                 </span>
                 <span className="text-[9px] text-muted-soft mt-0.5">{totalExpenseCount}笔支出</span>

@@ -32,7 +32,7 @@ export const WelcomePage: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col justify-center my-6">
         {step === 0 ? (
-          <div className="flex flex-col items-center text-center animate-fade-in">
+          <div className="w-full flex flex-col items-center text-center animate-fade-in">
             {/* Logo */}
             <div className="w-20 h-20 bg-brand-primary/10 rounded-2xl flex items-center justify-center mb-6 relative shadow-sm border border-brand-primary/20">
               <HugeiconsIcon icon={SparklesIcon} size={40} className="text-brand-primary fill-brand-primary animate-pulse" />
@@ -50,12 +50,12 @@ export const WelcomePage: React.FC = () => {
             </h2>
 
             {/* Subtitle */}
-            <p className="text-sm text-body leading-relaxed max-w-xs px-2">
+            <p className="w-full text-sm text-body leading-relaxed max-w-xs mx-auto px-2">
               极简流畅的本地优先记账体验，配合强大的 AI 分类和多维报表，轻松掌握您的财务状况。
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-5 animate-fade-in">
+          <div className="w-full flex flex-col gap-5 animate-fade-in">
             {/* Display Head */}
             <div className="text-center mb-2">
               <h2 className="text-2xl font-heading text-ink tracking-tight mb-2">

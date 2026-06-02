@@ -35,7 +35,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       </h3>
 
       {description && (
-        <p className="text-sm text-muted-token max-w-xs mb-4 select-none">
+        <p className="w-full text-sm text-muted-token max-w-xs mx-auto mb-4 select-none">
           {description}
         </p>
       )}
