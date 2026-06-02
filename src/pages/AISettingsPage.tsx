@@ -195,7 +195,7 @@ export const AISettingsPage: React.FC = () => {
         showBack={true}
       />
 
-      <div className="px-4 py-4 flex flex-col gap-5 overflow-y-auto">
+      <div className="px-4 py-4 flex flex-col gap-5">
         {/* Enable AI Banner & Switch */}
         <div className="bg-surface-card border border-hairline p-4 rounded-lg flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-3">

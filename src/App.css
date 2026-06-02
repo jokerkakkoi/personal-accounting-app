@@ -1,10 +1,7 @@
-@import "@fontsource/cormorant-garamond/400.css";
-@import "@fontsource/cormorant-garamond/500.css";
-@import "@fontsource/cormorant-garamond/600.css";
+@import "@fontsource-variable/noto-sans-sc";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -88,9 +85,9 @@
 }
 
 @theme inline {
-  --font-heading: 'Cormorant Garamond', serif;
-  --font-display: 'Cormorant Garamond', serif;
-  --font-sans: 'Inter Variable', sans-serif;
+  --font-heading: 'Noto Sans SC Variable', sans-serif;
+  --font-display: 'Noto Sans SC Variable', sans-serif;
+  --font-sans: 'Noto Sans SC Variable', sans-serif;
   
   /* shadcn UI variables exposed to Tailwind */
   --color-background: var(--background);
@@ -166,7 +163,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased selection:bg-brand-primary/20;
-    font-family: 'Inter Variable', sans-serif;
+    font-family: 'Noto Sans SC Variable', sans-serif;
     overscroll-behavior: none;
     overflow-x: hidden;
   }
@@ -177,7 +174,7 @@
     overflow: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Noto Sans SC Variable', sans-serif;
     font-weight: 500;
   }
 }

@@ -218,7 +218,7 @@ export const ReportsPage: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="px-4 py-4 flex flex-col gap-4 overflow-y-auto">
+        <div className="px-4 py-4 flex flex-col gap-4">
           {/* Summary stats */}
           <SummaryCard
             income={currentIncome}

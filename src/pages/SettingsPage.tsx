@@ -66,7 +66,7 @@ export const SettingsPage: React.FC = () => {
     <div className="flex-1 flex flex-col bg-canvas pb-24 select-none min-h-screen">
       <PageHeader title="系统设置" />
 
-      <div className="px-4 py-4 flex flex-col gap-5 overflow-y-auto">
+      <div className="px-4 py-4 flex flex-col gap-5">
         {/* App Info Header Card */}
         <div className="bg-surface-card border border-hairline p-5 rounded-lg flex items-center gap-4 shadow-sm select-none">
           <div className="w-12 h-12 rounded-full bg-brand-primary flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-md">

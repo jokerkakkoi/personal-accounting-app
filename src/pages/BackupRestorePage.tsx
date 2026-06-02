@@ -328,7 +328,7 @@ export const BackupRestorePage: React.FC = () => {
         showBack={true}
       />
 
-      <div className="px-4 py-4 flex flex-col gap-5 overflow-y-auto">
+      <div className="px-4 py-4 flex flex-col gap-5">
         {/* Data overview card */}
         <div className="bg-surface-card border border-hairline p-4 rounded-lg flex flex-col gap-3 shadow-sm select-none">
           <div className="flex items-center gap-2">

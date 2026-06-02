@@ -307,7 +307,7 @@ export const TrendsPage: React.FC = () => {
         )}
       </div>
 
-      <div className="px-4 py-4 flex flex-col gap-4 overflow-y-auto">
+      <div className="px-4 py-4 flex flex-col gap-4">
         {/* ECharts Line Chart container */}
         <div className="bg-surface-card border border-hairline rounded-lg p-3 shadow-sm flex flex-col">
           <div className="flex justify-between items-center mb-2 px-1">
