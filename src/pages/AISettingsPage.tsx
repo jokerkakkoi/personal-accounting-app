@@ -62,20 +62,24 @@ export const AISettingsPage: React.FC = () => {
 
 
   const handleSave = () => {
-    const finalModel = modelPreset === 'custom' ? customModel : modelPreset;
-    if (enabled && !apiKey) {
+    const cleanedBaseUrl = baseUrl.trim();
+    const cleanedApiKey = apiKey.trim();
+    const cleanedCustomModel = customModel?.trim();
+    const finalModel = modelPreset === 'custom' ? cleanedCustomModel : modelPreset;
+
+    if (enabled && !cleanedApiKey) {
       toast.error('启用 AI 功能时必须提供 API 密钥');
       return;
     }
-    if (enabled && modelPreset === 'custom' && !customModel) {
+    if (enabled && modelPreset === 'custom' && !cleanedCustomModel) {
       toast.error('请输入自定义模型名称');
       return;
     }
 
     updateAIConfig({
       enabled,
-      baseUrl,
-      apiKey,
+      baseUrl: cleanedBaseUrl,
+      apiKey: cleanedApiKey,
       model: finalModel,
       timeout,
       promptTemplate,

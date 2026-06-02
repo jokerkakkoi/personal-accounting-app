@@ -125,6 +125,11 @@ export const BackupRestorePage: React.FC = () => {
     setIsExporting(true);
     setExportProgress(0);
 
+    if (exportIntervalRef.current) {
+      clearInterval(exportIntervalRef.current);
+      exportIntervalRef.current = null;
+    }
+
     exportIntervalRef.current = setInterval(() => {
       setExportProgress((prev) => Math.min(prev + 25, 100));
     }, 200);
@@ -140,6 +145,16 @@ export const BackupRestorePage: React.FC = () => {
       triggerDownload();
     }
   }, [exportProgress]);
+
+  // Cleanup export interval on unmount
+  useEffect(() => {
+    return () => {
+      if (exportIntervalRef.current) {
+        clearInterval(exportIntervalRef.current);
+        exportIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const triggerDownload = async () => {
     try {

@@ -52,11 +52,8 @@ export const AppLayout: React.FC = () => {
               // Check if path matches. Handle root path correctly
               const isActive = currentPath === tab.path;
               
-              // To create space for the center FAB, we place an empty spacer at index 2
               return (
                 <React.Fragment key={tab.path}>
-                  {idx === 2 && <div className="w-14 h-12 shrink-0" />} {/* Spacer for FAB */}
-                  
                   <button
                     onClick={() => navigate(tab.path)}
                     className={cn(
@@ -68,6 +65,8 @@ export const AppLayout: React.FC = () => {
                     <HugeiconsIcon icon={Icon} size={20} className={isActive ? 'stroke-2' : 'stroke-1'} />
                     <span className="text-[10px] mt-1 font-medium">{tab.label}</span>
                   </button>
+
+                  {idx === 1 && <div className="w-14 h-12 shrink-0" />} {/* Spacer for FAB */}
                 </React.Fragment>
               );
             })}

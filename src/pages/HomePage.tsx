@@ -21,6 +21,7 @@ export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const transactions = useAppStore(state => state.transactions);
   const budgets = useAppStore(state => state.budgets);
+  const settings = useAppStore(state => state.settings);
   
   // Default to current year/month: e.g. "2026-06"
   const [currentMonth, setCurrentMonth] = useState(() => dayjs().format('YYYY-MM'));
@@ -115,7 +116,9 @@ export const HomePage: React.FC = () => {
         <MonthlySummaryCard income={totalIncome} expense={totalExpense} />
 
         {/* Budget Warning banner */}
-        <BudgetBanner spent={totalExpense} total={currentBudget?.totalAmount} />
+        {settings.budgetNotification && (
+          <BudgetBanner spent={totalExpense} total={currentBudget?.totalAmount} />
+        )}
       </div>
 
       {/* Transaction List */}

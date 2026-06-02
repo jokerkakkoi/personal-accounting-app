@@ -25,18 +25,18 @@ export const AppRoutes: React.FC = () => {
 
   return (
     <Routes>
+      {/* Onboarding welcome page */}
       <Route element={<AppLayout />}>
-        {/* Onboarding routing: if not seen welcome, redirect to welcome */}
         <Route 
           path="/welcome" 
           element={hasSeenWelcome ? <Navigate to="/" replace /> : <WelcomePage />} 
         />
-        
-        {/* Core app routes */}
-        <Route 
-          path="/" 
-          element={!hasSeenWelcome ? <Navigate to="/welcome" replace /> : <HomePage />} 
-        />
+      </Route>
+      
+      {/* Protected Core App routes */}
+      <Route element={hasSeenWelcome ? <AppLayout /> : <Navigate to="/welcome" replace />}>
+        {/* Home */}
+        <Route path="/" element={<HomePage />} />
         
         {/* Transactions */}
         <Route path="/transaction/new" element={<TransactionFormPage />} />

@@ -8,6 +8,7 @@ interface AppState {
   budgets: Budget[];
   settings: AppSettings;
   aiConfig: AIConfig;
+  transactionsLoaded: boolean;
   
   // Transaction Actions
   addTransaction: (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => string;
@@ -58,6 +59,7 @@ export const useAppStore = create<AppState>((set) => ({
   budgets: loadFromStorage<Budget[]>('budgets', INITIAL_BUDGETS),
   settings: loadFromStorage<AppSettings>('settings', MOCK_SETTINGS),
   aiConfig: loadFromStorage<AIConfig>('aiConfig', MOCK_AI_CONFIG),
+  transactionsLoaded: true,
 
   // Transaction Actions
   addTransaction: (txData) => {
@@ -146,21 +148,45 @@ export const useAppStore = create<AppState>((set) => ({
 
   deleteCategory: (id) => {
     set((state) => {
-      // Find default category of the same type to map existing transactions to
+      // Find category to delete
       const categoryToDelete = state.categories.find(c => c.id === id);
       if (!categoryToDelete) return {};
       
-      const defaultCategory = state.categories.find(c => c.type === categoryToDelete.type && c.isDefault) 
-        || state.categories.find(c => c.type === categoryToDelete.type);
+      // Block deletion of predefined categories
+      if (categoryToDelete.isPredefined) return {};
+
+      // Search for fallback category of same type that is not being deleted
+      const sameTypeCats = state.categories.filter(c => c.type === categoryToDelete.type && c.id !== id);
+      
+      const defaultCategory = sameTypeCats.find(c => c.isDefault)
+        || sameTypeCats.find(c => c.id === 'exp_other' || c.id === 'inc_other')
+        || sameTypeCats[0];
         
-      const fallbackId = defaultCategory ? defaultCategory.id : 'exp_other';
+      let updatedCats = state.categories.filter((cat) => cat.id !== id);
+      let fallbackId: string;
+
+      if (defaultCategory) {
+        fallbackId = defaultCategory.id;
+      } else {
+        const defaultId = categoryToDelete.type === 'expense' ? 'exp_other' : 'inc_other';
+        const defaultName = categoryToDelete.type === 'expense' ? '其他支出' : '其他收入';
+        const defaultIcon = '📦';
+        const localFallback: Category = {
+          id: defaultId,
+          name: defaultName,
+          icon: defaultIcon,
+          type: categoryToDelete.type,
+          isPredefined: true,
+          isDefault: true,
+        };
+        updatedCats.push(localFallback);
+        fallbackId = defaultId;
+      }
 
       // Update transactions belonging to deleted category to fallback category
       const updatedTxs = state.transactions.map((tx) => 
         tx.categoryId === id ? { ...tx, categoryId: fallbackId, updatedAt: new Date().toISOString() } : tx
       );
-      
-      const updatedCats = state.categories.filter((cat) => cat.id !== id);
       
       saveToStorage('categories', updatedCats);
       saveToStorage('transactions', updatedTxs);

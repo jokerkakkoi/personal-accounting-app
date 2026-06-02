@@ -23,6 +23,7 @@ export const TransactionFormPage: React.FC = () => {
   const categories = useAppStore(state => state.categories);
   const addTransaction = useAppStore(state => state.addTransaction);
   const updateTransaction = useAppStore(state => state.updateTransaction);
+  const transactionsLoaded = useAppStore(state => state.transactionsLoaded);
 
   const isEditMode = !!id;
 
@@ -66,14 +67,14 @@ export const TransactionFormPage: React.FC = () => {
         // Transaction not found and we haven't prefilled for this id yet —
         // it may still be loading. Only navigate away if transactions are loaded
         // but the specific tx is missing.
-        if (transactions.length > 0) {
+        if (transactionsLoaded) {
           prefilledIdRef.current = id!;
           toast.error('未找到该交易记录');
           navigate('/', { replace: true });
         }
       }
     }
-  }, [id, isEditMode, transactions, navigate]);
+  }, [id, isEditMode, transactions, transactionsLoaded, navigate]);
 
   // Handle default category select when type changes
   useEffect(() => {
@@ -294,10 +295,11 @@ export const TransactionFormPage: React.FC = () => {
         {/* Date & Time Selectors */}
         <div className="grid grid-cols-2 gap-3 mt-1">
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs text-muted-token select-none">选择日期</Label>
+            <Label htmlFor="tx-date-input" className="text-xs text-muted-token select-none">选择日期</Label>
             <div className="relative flex items-center">
               <HugeiconsIcon icon={Calendar02Icon} size={14} className="absolute left-2.5 text-muted-token stroke-2 pointer-events-none" />
               <Input
+                id="tx-date-input"
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
@@ -306,10 +308,11 @@ export const TransactionFormPage: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs text-muted-token select-none">选择时间</Label>
+            <Label htmlFor="tx-time-input" className="text-xs text-muted-token select-none">选择时间</Label>
             <div className="relative flex items-center">
               <HugeiconsIcon icon={Time02Icon} size={14} className="absolute left-2.5 text-muted-token stroke-2 pointer-events-none" />
               <Input
+                id="tx-time-input"
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
@@ -322,12 +325,13 @@ export const TransactionFormPage: React.FC = () => {
         {/* Recurring Settings Toggle */}
         <div className="flex items-center justify-between border-t border-hairline pt-3 mt-1">
           <div className="flex flex-col">
-            <Label className="text-xs text-ink font-semibold select-none">定期交易</Label>
+            <Label id="recurring-label" className="text-xs text-ink font-semibold select-none">定期交易</Label>
             <span className="text-[10px] text-muted-token select-none">在固定周期自动生成这笔记录</span>
           </div>
           <Switch
             checked={isRecurring}
             onCheckedChange={setIsRecurring}
+            aria-labelledby="recurring-label"
             className="data-[state=checked]:bg-brand-primary"
           />
         </div>
